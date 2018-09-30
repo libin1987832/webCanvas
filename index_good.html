@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>hivideo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <script src="fileSaver.js"></script>
+    <style type="text/css">
+    body{       
+        margin:0;       
+        padding:0;   
+        }       
+        #container{   
+        width:100%;        
+        height:750px;     
+        }    
+        #heading{  
+            width:100%;  
+            height:10%;       
+        }     
+        #content-menu{        
+            width:35%;          
+            height:100%;       
+            float:left;      
+        }    
+        #content-body{    
+            width:65%;       
+            height:100%;        
+            float:left; 
+            }      
+        #footer{   
+            width:100%;  
+            height:10%;    
+            clear: both;    
+        }
+.div_radio {
+  position: relative;
+  line-height: 30px;
+  align:left;
+}
+
+input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  opacity: 0;
+}
+
+label {
+  position: absolute;
+  left: 5px;
+  top: 8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid #999;
+}
+
+/*设置选中的input的样式*/
+/* + 是兄弟选择器,获取选中后的label元素*/
+input:checked+label {
+  background-color: #006eb2;
+  border: 1px solid #006eb2;
+}
+
+input:checked+label::after {
+  position: absolute;
+  content: "";
+  width: 5px;
+  height: 10px;
+  top: 3px;
+  left: 6px;
+  border: 2px solid #fff;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg)
+}
+.btn { display: block; 
+    position: relative; 
+
+    padding: 10px;
+     float: left; 
+
+      text-decoration: none; 
+      cursor: pointer;
+      margin-right: 60px;
+      margin-left: 100px;
+       }
+
+h1{ margin-left: 100px; }
+.hide_video{display: none;}
+
+    </style>
+</head>
+<body>
+   <div id="container">   
+        <div id="heading">
+            <h1 id="text" >asdf</h1>
+        </div>     
+        <div id="content-menu">
+            <video id="video_play"  width="640" height="360">
+                <source src="http://www.html5videoplayer.net/videos/madagascar3.mp4" type="video/mp4">
+            </video>          
+            <video id="video" class="hide_video">
+                <source src="http://www.html5videoplayer.net/videos/madagascar3.mp4" type="video/mp4">
+            </video>
+            <canvas id="canvas" width="640" height="360"></canvas>    
+        </div>   
+        <div id="content-body">
+            <form>
+                <div class="div_radio">
+                    <input id="item1" type="radio" name="item" value="1" checked>
+                    <label for="item1"></label>
+                    <span style="margin-left: 10px">1</span>
+                </div>
+                <div class="div_radio">
+                    <input id="item2" type="radio" name="item" value="2">
+                    <label for="item2"></label>
+                    <span style="margin-left: 10px">2</span>
+                </div>
+            </form>
+        </div> 
+        <div id="footer">
+            <button id="openCamera" class="btn">打开摄像头</button>
+            <button id="start-recording-next" class="btn" disabled>下一个</button>
+            <button id="start-recording-pre" class="btn" disabled>上一个</button>
+            <button id="save-recording" class="btn" disabled>保存</button>
+            <button id="close" class="btn" disabled>关闭</button>
+        </div>
+    </div>
+
+
+        <!--div class="top">
+            <video id="video">
+                <source src="http://www.html5videoplayer.net/videos/madagascar3.mp4" type="video/mp4">
+            </video>
+            <div>
+            <h1 id="text">asdf</h1>
+            </div>
+        </div>
+        <div class="top">
+            <div id="videos-container" style="width:320px; height:240px;"></div>
+        </div>
+        <div class="button">
+            <button id="openCamera">打开摄像头</button>
+            <button id="start-recording-next" disabled>下一个</button>
+            <button id="start-recording-pre" disabled>上一个</button>
+            <button id="save-recording" disabled>保存</button>
+            <button id="close" disabled>关闭</button>
+        </div>-->
+</body>
+ <script>
+        var index=0;
+        var sum=2;
+        var fileName=new Array("1","2");
+        var text = document.getElementById("text");
+        var video_r = document.getElementById("video_play");
+        var openBtn = document.getElementById("openCamera");
+        var startBtn_n = document.getElementById("start-recording-next");
+        var startBtn_p = document.getElementById("start-recording-pre");
+        var saveBtn = document.getElementById("save-recording");
+        var closeBtn = document.getElementById("close");
+        var isAutoSend = document.getElementsByName('item');
+        var aCanvas=document.getElementById('canvas');
+        var ctx=aCanvas.getContext('2d');
+        /*video.addEventListener('ended', function () {
+            setTimeout(function(){
+                    saveBtn.onclick();
+                        }, 3000);
+        }, false);*/
+
+            var mediaStream;
+            var recorderFile;
+            var stopRecordCallback;
+
+            openBtn.onclick = function() {
+                this.disabled = true;
+                startBtn_n.disabled=false;
+                startBtn_p.disabled=false;
+                openCamera();
+                
+            };
+
+            startBtn_n.onclick = function() {
+                this.disabled = true;
+                startBtn_p.disabled=true;
+                saveBtn.disabled=false;
+                for (var i = 0; i < isAutoSend.length; i++) 
+                    if (isAutoSend[i].checked == true)
+                        index=i;
+                index=(index+1)%isAutoSend.length;
+                isAutoSend[index].checked=true;
+                text.innerText=fileName[index];
+                video_r.src= fileName[index] + '.mp4';
+                video_r.play();
+                startRecord();
+                /*setTimeout(function(){
+                    startRecord();
+                        }, 3000);*/
+            };
+            startBtn_p.onclick = function() {
+                this.disabled = true;
+                startBtn_n.disabled=true;
+                saveBtn.disabled=false;
+                for (var i = 0; i < isAutoSend.length; i++) 
+                    if (isAutoSend[i].checked == true) 
+                        index=i;
+                index=(index-1+isAutoSend.length)%isAutoSend.length;
+                isAutoSend[index].checked=true;
+                video_r.src= fileName[index] + '.mp4';
+                text.innerText=fileName[index];
+                video_r.play();
+                 startRecord();
+                /*setTimeout(function(){
+                    startRecord();
+                        }, 3000);*/
+            };
+            saveBtn.onclick = function() {
+                stopRecord(function() {
+                    //alert("录制成功!");
+                    saveBtn.disabled=true;
+                     saver();
+                });    
+                startBtn_n.disabled=false;
+                startBtn_p.disabled=false;
+                
+                // alert('Drop WebM file on Chrome or Firefox. Both can play entire file. VLC player or other players may not work.');
+            };
+            closeBtn.onclick= function() {
+                MediaUtils.closeStream(mediaStream);
+                // alert('Drop WebM file on Chrome or Firefox. Both can play entire file. VLC player or other players may not work.');
+            };
+            var mediaRecorder;
+            var videosContainer = document.getElementById('videos-container');
+
+            function openCamera(){
+                //var len = videosContainer.childNodes.length;
+                //for(var i=0;i<len;i++){
+                 //   videosContainer.removeChild(videosContainer.childNodes[i]);
+                //}
+
+                //var video = document.createElement('video');
+                var video = document.getElementById('video');
+                var videoWidth = 640;
+                var videoHeight = 360;
+
+                video.controls = false;
+                video.muted = true;
+                video.width = videoWidth;
+                video.height = videoHeight;
+                MediaUtils.getUserMedia(true, false, function (err, stream) {
+                    if (err) {
+                        throw err;
+                    } else {
+                        // 通过 MediaRecorder 记录获取到的媒体流
+                        console.log();
+                        mediaRecorder = new MediaRecorder(stream);
+                        mediaStream = stream;
+                        var chunks = [], startTime = 0;
+                        video.srcObject = stream;
+                        video.play();
+                        
+                        window.setInterval(function(){
+                            ctx.drawImage(video, 0, 0, 640, 360);
+                            ctx.beginPath();
+                            ctx.arc(300,60,50,0,2*Math.PI);
+                            ctx.lineWidth=2;
+                            ctx.strokeStyle="red";
+                            ctx.stroke();
+                        },15);
+                        //videosContainer.appendChild(video);
+                        mediaRecorder.ondataavailable = function(e) {
+                            mediaRecorder.blobs.push(e.data);
+                            chunks.push(e.data);
+                        };
+                        mediaRecorder.blobs = [];
+
+                        mediaRecorder.onstop = function (e) {
+                            recorderFile = new Blob(chunks, { 'type' : mediaRecorder.mimeType });
+                            chunks = [];
+                            if (null != stopRecordCallback) {
+                                stopRecordCallback();
+                            }
+                        };
+                }
+            });
+            }
+
+            // 停止录制
+            function stopRecord(callback) {
+                stopRecordCallback = callback;
+                // 终止录制器
+                mediaRecorder.stop();
+                // 关闭媒体流
+                //MediaUtils.closeStream(mediaStream);
+            }
+
+            var MediaUtils = {
+                /**
+                * 获取用户媒体设备(处理兼容的问题)
+                * @param videoEnable {boolean} - 是否启用摄像头
+                * @param audioEnable {boolean} - 是否启用麦克风
+                * @param callback {Function} - 处理回调
+                */
+                getUserMedia: function (videoEnable, audioEnable, callback) {
+                    navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia
+                    || navigator.msGetUserMedia || window.getUserMedia;
+                    var constraints = {video: videoEnable, audio: audioEnable};
+                    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                        navigator.mediaDevices.getUserMedia(constraints).then(function (stream) {
+                        callback(false, stream);
+                    })['catch'](function(err) {
+                        callback(err);
+                    });
+                    } else if (navigator.getUserMedia) {
+                        navigator.getUserMedia(constraints, function (stream) {
+                        callback(false, stream);
+                    }, function (err) {
+                        callback(err);
+                    });
+                } else {
+                    callback(new Error('Not support userMedia'));
+                }
+            },
+
+                /**
+                * 关闭媒体流
+                * @param stream {MediaStream} - 需要关闭的流
+                */
+                closeStream: function (stream) {
+                    if (typeof stream.stop === 'function') {
+                        stream.stop();
+                    }
+                    else {
+                        let trackList = [stream.getAudioTracks(), stream.getVideoTracks()];
+
+                        for (let i = 0; i < trackList.length; i++) {
+                            let tracks = trackList[i];
+                            if (tracks && tracks.length > 0) {
+                                for (let j = 0; j < tracks.length; j++) {
+                                    let track = tracks[j];
+                                    if (typeof track.stop === 'function') {
+                                        track.stop();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }; 
+
+function startRecord() {
+    mediaRecorder.start();
+    /*setTimeout(function(){
+        // 结束
+        stopRecord(function() {
+            alert("录制成功!");
+            openBtn.disabled=false;
+            saveBtn.disabled=false;
+            //send();
+        });
+    }, 5000);*/
+}
+
+function saver(){
+    var file = new File([recorderFile], fileName[index] + (new Date).toISOString().replace(/:|\./g, '-') + '.mp4', {
+        type: 'video/mp4'
+    });
+    saveAs(file);
+}
+    </script>
+</html>
